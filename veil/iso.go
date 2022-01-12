@@ -150,7 +150,6 @@ func (d *IsoService) Download(iso *IsoObject) (*IsoObject, *http.Response, error
 	// Create the file
 	pwd, _ := os.Getwd()
 	filePath := filepath.Dir(pwd) + "/file_data/downloaded_" + iso.FileName
-	fmt.Println(filePath)
 	out, err := os.Create(filePath)
 	defer out.Close()
 
