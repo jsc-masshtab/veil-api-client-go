@@ -1,4 +1,4 @@
-package veil_api_client_go
+package veil
 
 import (
 	"encoding/json"
@@ -199,7 +199,6 @@ func (d *DomainService) Create(config DomainCreateConfig) (*DomainObject, *http.
 func (d *DomainService) MultiCreate(config DomainMultiCreateConfig) (*DomainObject, *http.Response, error) {
 	domain := new(DomainObject)
 	b, _ := json.Marshal(config)
-	fmt.Println(config.SshInject)
 	asyncResp := new(AsyncResponse)
 	res, err := d.client.ExecuteRequest("POST", fmt.Sprint(baseDomainUrl, "multi-create-domain/?async=1"), b, asyncResp)
 	if err != nil {

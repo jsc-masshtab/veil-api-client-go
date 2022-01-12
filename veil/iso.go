@@ -1,4 +1,4 @@
-package veil_api_client_go
+package veil
 
 import (
 	"bytes"
@@ -149,14 +149,14 @@ func (d *IsoService) Download(iso *IsoObject) (*IsoObject, *http.Response, error
 	}
 	// Create the file
 	pwd, _ := os.Getwd()
-	filePath := pwd + "/file_data/downloaded_" + iso.FileName
+	filePath := filepath.Dir(pwd) + "/file_data/downloaded_" + iso.FileName
 	out, err := os.Create(filePath)
 	defer out.Close()
 
 	// Get the data
 	resp, err := http.Get(fmt.Sprint(GetEnvUrl(), iso.DownloadUrl))
 	if err != nil {
-		return iso, res, err
+		return iso, res, fmt.Errorf("get the data error: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -169,13 +169,13 @@ func (d *IsoService) Download(iso *IsoObject) (*IsoObject, *http.Response, error
 	// Writer the body to file
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		return iso, res, err
+		return iso, res, fmt.Errorf("write the body to file error: %w", err)
 	}
 
 	// Delete file
 	err = os.Remove(filePath)
 	if err != nil {
-		return iso, res, err
+		return iso, res, fmt.Errorf("delete file error: %w", err)
 	}
 	return iso, res, nil
 }

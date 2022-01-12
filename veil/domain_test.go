@@ -1,4 +1,4 @@
-package veil_api_client_go
+package veil
 
 import (
 	"github.com/google/uuid"
@@ -25,8 +25,9 @@ func Test_DomainCreate(t *testing.T) {
 	config := new(DomainCreateConfig)
 	config.DomainId = TestDomainID
 	config.VerboseName = TestDomainName
+	config.MemoryCount = 50
 	domain, _, err := client.Domain.Create(*config)
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	assert.NotEqual(t, domain.Id, "", "Domain Id can not be empty")
 
 	return

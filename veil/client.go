@@ -1,4 +1,4 @@
-package veil_api_client_go
+package veil
 
 import (
 	"bytes"
@@ -22,7 +22,6 @@ type WebClient struct {
 	Token      string
 	HTTPClient *http.Client
 
-	// TODO Change to type url
 	BaseURL string
 
 	// Services which is used for accessing API
@@ -62,7 +61,6 @@ func NewClient(apiUrl string, token string, insecure bool) *WebClient {
 		BaseURL:    apiUrl,
 	}
 
-	// TODO Maybe it will be better to add account checking here via token, to be sure that token is valid and user exists
 	// Passing client to all services for easy client mocking in future and not passing it to every function
 	client.Domain = &DomainService{client}
 	client.Node = &NodeService{client}
@@ -72,8 +70,8 @@ func NewClient(apiUrl string, token string, insecure bool) *WebClient {
 	client.Task = &TaskService{client}
 	client.Event = &EventService{client}
 	client.User = &UserService{client}
-	return client
 
+	return client
 }
 
 // ExecuteRequest Executing HTTP Request (receiving info from API)
@@ -104,7 +102,6 @@ func (client *WebClient) ExecuteRequest(method string, url string, body []byte, 
 			log.Println(err)
 			return res, err
 		} else {
-			fmt.Println(reader)
 			errMsg := fmt.Sprintf("status code: %d, detail: %s on url %s %s", res.StatusCode, res.Body, method, url)
 			return res, errors.New(errMsg)
 		}

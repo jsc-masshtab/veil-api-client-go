@@ -1,4 +1,4 @@
-package veil_api_client_go
+package veil
 
 import (
 	"encoding/json"
