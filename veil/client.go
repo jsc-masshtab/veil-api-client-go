@@ -25,15 +25,16 @@ type WebClient struct {
 	BaseURL string
 
 	// Services which is used for accessing API
-	Domain   *DomainService
-	Node     *NodeService
-	DataPool *DataPoolService
-	Vdisk    *VdiskService
-	Iso      *IsoService
-	Task     *TaskService
-	Event    *EventService
-	User     *UserService
-	Vnet     *VnetService
+	Domain      *DomainService
+	Node        *NodeService
+	DataPool    *DataPoolService
+	Vdisk       *VdiskService
+	Iso         *IsoService
+	Task        *TaskService
+	Event       *EventService
+	User        *UserService
+	Vnet        *VnetService
+	VMachineInf *VMachineInfService
 }
 
 type Error struct {
@@ -72,6 +73,7 @@ func NewClient(apiUrl string, token string, insecure bool) *WebClient {
 	client.Event = &EventService{client}
 	client.User = &UserService{client}
 	client.Vnet = &VnetService{client}
+	client.VMachineInf = &VMachineInfService{client}
 	return client
 }
 
