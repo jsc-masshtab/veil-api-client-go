@@ -33,6 +33,7 @@ type WebClient struct {
 	Task     *TaskService
 	Event    *EventService
 	User     *UserService
+	Vnet     *VnetService
 }
 
 type Error struct {
@@ -70,7 +71,7 @@ func NewClient(apiUrl string, token string, insecure bool) *WebClient {
 	client.Task = &TaskService{client}
 	client.Event = &EventService{client}
 	client.User = &UserService{client}
-
+	client.Vnet = &VnetService{client}
 	return client
 }
 

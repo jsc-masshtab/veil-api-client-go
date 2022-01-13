@@ -87,9 +87,9 @@ type DataPoolsResponse struct {
 	Results []DataPoolObjectsList `json:"results,omitempty"`
 }
 
-func (dp *DataPoolObject) Refresh(client *WebClient) (*DataPoolObject, error) {
-	_, err := client.ExecuteRequest("GET", fmt.Sprint(baseDataPoolUrl, dp.Id, "/"), []byte{}, dp)
-	return dp, err
+func (entity *DataPoolObject) Refresh(client *WebClient) (*DataPoolObject, error) {
+	_, err := client.ExecuteRequest("GET", fmt.Sprint(baseDataPoolUrl, entity.Id, "/"), []byte{}, entity)
+	return entity, err
 }
 
 func (d *DataPoolService) List() (*DataPoolsResponse, *http.Response, error) {
@@ -118,9 +118,9 @@ func (d *DataPoolService) ListParams(queryParams map[string]string) (*DataPoolsR
 
 func (d *DataPoolService) Get(Id string) (*DataPoolObject, *http.Response, error) {
 
-	dp := new(DataPoolObject)
+	entity := new(DataPoolObject)
 
-	res, err := d.client.ExecuteRequest("GET", fmt.Sprint(baseDataPoolUrl, Id, "/"), []byte{}, dp)
+	res, err := d.client.ExecuteRequest("GET", fmt.Sprint(baseDataPoolUrl, Id, "/"), []byte{}, entity)
 
-	return dp, res, err
+	return entity, res, err
 }
