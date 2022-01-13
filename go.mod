@@ -1,4 +1,4 @@
-module github.com/slashburygin/veil-api-client-go
+module veil-api-client-go
 
 go 1.17
 
