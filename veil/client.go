@@ -27,6 +27,8 @@ type WebClient struct {
 	// Services which is used for accessing API
 	Domain      *DomainService
 	Node        *NodeService
+	Cluster     *ClusterService
+	DataCenter  *DataCenterService
 	DataPool    *DataPoolService
 	Vdisk       *VdiskService
 	Iso         *IsoService
@@ -66,6 +68,8 @@ func NewClient(apiUrl string, token string, insecure bool) *WebClient {
 	// Passing client to all services for easy client mocking in future and not passing it to every function
 	client.Domain = &DomainService{client}
 	client.Node = &NodeService{client}
+	client.Cluster = &ClusterService{client}
+	client.DataCenter = &DataCenterService{client}
 	client.DataPool = &DataPoolService{client}
 	client.Vdisk = &VdiskService{client}
 	client.Iso = &IsoService{client}

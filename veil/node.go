@@ -3,6 +3,7 @@ package veil
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 )
 
 const baseNodeUrl string = "/api/nodes/"
@@ -64,11 +65,26 @@ func (d *NodeService) List() (*NodesResponse, *http.Response, error) {
 	return response, res, err
 }
 
+func (d *NodeService) ListParams(queryParams map[string]string) (*NodesResponse, *http.Response, error) {
+	listUrl := baseNodeUrl
+	if len(queryParams) != 0 {
+		params := url.Values{}
+		for k, v := range queryParams {
+			params.Add(k, v)
+		}
+		listUrl += "?"
+		listUrl += params.Encode()
+	}
+	response := new(NodesResponse)
+	res, err := d.client.ExecuteRequest("GET", listUrl, []byte{}, response)
+	return response, res, err
+}
+
 func (d *NodeService) Get(Id string) (*NodeObject, *http.Response, error) {
 
-	node := new(NodeObject)
+	entity := new(NodeObject)
 
-	res, err := d.client.ExecuteRequest("GET", fmt.Sprint(baseNodeUrl, Id, "/"), []byte{}, node)
+	res, err := d.client.ExecuteRequest("GET", fmt.Sprint(baseNodeUrl, Id, "/"), []byte{}, entity)
 
-	return node, res, err
+	return entity, res, err
 }
