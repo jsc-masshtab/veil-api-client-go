@@ -71,10 +71,13 @@ func Test_DomainPower(t *testing.T) {
 
 func Test_DomainUpdate(t *testing.T) {
 	client := NewClient("", "", false)
-
-	domain, _, err := client.Domain.Update(TestDomainID, "test")
+	config := new(DomainUpdateConfig)
+	newName := "test"
+	config.VerboseName = newName
+	domain, _, err := client.Domain.Update(TestDomainID, *config)
+	domain.Refresh(client)
 	assert.Nil(t, err)
-	assert.NotEqual(t, domain.Id, "", "Domain Id can not be empty")
+	assert.NotEqual(t, domain.VerboseName, newName, "Domain VerboseName should be test")
 
 	return
 }

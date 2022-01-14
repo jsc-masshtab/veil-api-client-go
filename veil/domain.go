@@ -165,6 +165,26 @@ type DomainMultiCreateConfig struct {
 	CloudInitConfig    *CloudConfig        `json:"cloud_init_config,omitempty"`
 }
 
+type DomainUpdateConfig struct {
+	VerboseName string   `json:"verbose_name,omitempty"`
+	Description string   `json:"description,omitempty"`
+	SpiceStream bool     `json:"spice_stream,omitempty"`
+	UserXml     string   `json:"user_xml,omitempty"`
+	GpuOptimize bool     `json:"gpu_optimize,omitempty"`
+	OsType      string   `json:"os_type,omitempty"`
+	OsVersion   string   `json:"os_version,omitempty"`
+	StartOnBoot bool     `json:"start_on_boot,omitempty"`
+	Tablet      bool     `json:"tablet,omitempty"`
+	Features    []string `json:"features,omitempty"`
+	QemuArgs    []string `json:"qemu_args,omitempty"`
+	Priority    int      `json:"priority,omitempty"`
+}
+
+func (entity *DomainObject) Refresh(client *WebClient) (*DomainObject, error) {
+	_, err := client.ExecuteRequest("GET", fmt.Sprint(baseDomainUrl, entity.Id, "/"), []byte{}, entity)
+	return entity, err
+}
+
 func (d *DomainService) List() (*DomainsResponse, *http.Response, error) {
 
 	response := new(DomainsResponse)
@@ -209,24 +229,17 @@ func (d *DomainService) MultiCreate(config DomainMultiCreateConfig) (*DomainObje
 	return domain, res, err
 }
 
-func (d *DomainService) Get(domainID string) (*DomainObject, *http.Response, error) {
-	domain := new(DomainObject)
-	res, err := d.client.ExecuteRequest("GET", fmt.Sprint(baseDomainUrl, domainID, "/"), []byte{}, domain)
-	return domain, res, err
+func (d *DomainService) Get(Id string) (*DomainObject, *http.Response, error) {
+	entity := new(DomainObject)
+	res, err := d.client.ExecuteRequest("GET", fmt.Sprint(baseDomainUrl, Id, "/"), []byte{}, entity)
+	return entity, res, err
 }
 
-func (d *DomainService) Update(domainID string, description string) (*DomainObject, *http.Response, error) {
-	domain := new(DomainObject)
-
-	body := struct {
-		Description string `json:"description,omitempty"`
-	}{description}
-
-	b, _ := json.Marshal(body)
-
-	res, err := d.client.ExecuteRequest("PUT", fmt.Sprint(baseDomainUrl, domainID, "/"), b, domain)
-
-	return domain, res, err
+func (d *DomainService) Update(Id string, config DomainUpdateConfig) (*DomainObject, *http.Response, error) {
+	entity := new(DomainObject)
+	b, _ := json.Marshal(config)
+	res, err := d.client.ExecuteRequest("PUT", fmt.Sprint(baseDomainUrl, Id, "/"), b, entity)
+	return entity, res, err
 }
 
 func (d *DomainService) Start(domain *DomainObject) (*DomainObject, *http.Response, error) {

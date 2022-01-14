@@ -25,7 +25,7 @@ type EventObjectsList struct {
 	Created       string          `json:"created,omitempty"`
 	Task          string          `json:"task,omitempty"`
 	Entities      []EventToEntity `json:"entities,omitempty"`
-	Readed        []string        `json:"readed,omitempty"`
+	Readed        []int           `json:"readed,omitempty"`
 }
 
 type EventObject struct {
