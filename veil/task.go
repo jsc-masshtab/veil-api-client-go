@@ -12,6 +12,9 @@ const baseTaskUrl string = "/api/tasks/"
 // TaskStatusCheckInterval - time between async checks in seconds
 const TaskStatusCheckInterval = 1
 
+// TaskAsyncTimeout - time to wait task ending
+const TaskAsyncTimeout = 300
+
 type TaskService struct {
 	client Client
 }
@@ -72,6 +75,7 @@ type TaskObject struct {
 	ErrorMessage       string               `json:"error_message,omitempty"`
 	IsCancellable      bool                 `json:"is_cancellable,omitempty"`
 	Permissions        []string             `json:"permissions,omitempty"`
+	Response           string               `json:"response,omitempty"`
 }
 
 type TasksResponse struct {
@@ -80,33 +84,31 @@ type TasksResponse struct {
 }
 
 func (d *TaskService) List() (*TasksResponse, *http.Response, error) {
-
 	response := new(TasksResponse)
-
 	res, err := d.client.ExecuteRequest("GET", baseTaskUrl, []byte{}, response)
-
 	return response, res, err
 }
 
 func (d *TaskService) Get(Id string) (*TaskObject, *http.Response, error) {
-
-	task := new(TaskObject)
-
-	res, err := d.client.ExecuteRequest("GET", fmt.Sprint(baseTaskUrl, Id, "/"), []byte{}, task)
-
-	return task, res, err
+	entity := new(TaskObject)
+	res, err := d.client.ExecuteRequest("GET", fmt.Sprint(baseTaskUrl, Id, "/"), []byte{}, entity)
+	return entity, res, err
 }
 
-func WaitTaskReady(uuid string, blocked bool, timeout int, panicTimeout bool) *TaskObject {
+func (d *TaskService) Response(Id string, object interface{}) (*http.Response, error) {
+	res, err := d.client.ExecuteRequest("GET", fmt.Sprint(baseTaskUrl, Id, "/response/"), []byte{}, object)
+	return res, err
+}
+
+func WaitTaskReady(client *WebClient, uuid string, blocked bool, timeout int64, panicTimeout bool) *TaskObject {
 	if timeout == 0 {
-		timeout = 180
+		timeout = TaskAsyncTimeout
 	}
-	client := NewClient("", "", false)
 	task, _, _ := client.Task.Get(uuid)
 	if task.Status != TaskStatus.InProgress {
 		return task
 	} else if blocked {
-		timeoutTime := time.Now().Second() + timeout
+		timeoutTime := time.Now().Unix() + timeout
 		for true {
 			task, _, _ := client.Task.Get(uuid)
 			if task.Status != TaskStatus.InProgress {
@@ -114,7 +116,7 @@ func WaitTaskReady(uuid string, blocked bool, timeout int, panicTimeout bool) *T
 				task, _, _ := client.Task.Get(uuid)
 				return task
 			}
-			if time.Now().Second() > timeoutTime {
+			if time.Now().Unix() > timeoutTime {
 				if panicTimeout {
 					errMsg := fmt.Sprintf("Task: %s wait %d timeout error. is_multitask: %s. progress: %d. status: %s", task.Name, timeout, strconv.FormatBool(task.IsMultitask), task.Progress, task.Status)
 					panic(errMsg)
@@ -127,6 +129,10 @@ func WaitTaskReady(uuid string, blocked bool, timeout int, panicTimeout bool) *T
 }
 
 type AsyncResponse struct {
-	Entity string     `json:"entity,omitempty"`
-	Task   TaskObject `json:"_task,omitempty"`
+	Task TaskObject `json:"_task,omitempty"`
+}
+
+type AsyncEntityResponse struct {
+	AsyncResponse
+	Entity string `json:"entity,omitempty"`
 }

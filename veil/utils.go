@@ -10,7 +10,7 @@ import (
 func GetEnvToken() string {
 	token := os.Getenv("VEIL_API_TOKEN")
 	if token == "" {
-		token := "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjo1NiwidXNlcm5hbWUiOiJidXIiLCJleHAiOjE5NTU0Mjc5OTEsInNzbyI6ZmFsc2UsIm9yaWdfaWF0IjoxNjQwOTMxOTkxfQ.BCPJi1hE_uvlv_sCjLYwGGq2qKJU8dbR9UUC5Cy79AA"
+		token := "eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJ1c2VyX2lkIjo1NiwidXNlcm5hbWUiOiJidXIiLCJleHAiOjE5NTcwNjg2MDYsInNzbyI6ZmFsc2UsIm9yaWdfaWF0IjoxNjQyNTcyNjA2fQ.S249CYNV6yg25hx5tMDNYH5AV00ZNS3fay-dkb4MISa-AOGfRB9tGtico5wdFOq8DpzpqCoRRBZPoPB9yTxz0c-hgMOWK3mrR6QAroOi1RGw8Cuaqhg7jdlgkc6S1fhcBPZB0r9rPQ38N3MNkrcUnxNrj2JhOCXG8av6ZBuK-BxzO4Gb6PeuVCtqP9UT-dIhyR54_vf_hD_fRsBxmfzWib0htL_TjtQYe99fs0q6uOHQGtw6lIdgmMQVdgdedFgziON4PnwVY__RTDWX9SS70u6dRUIqLX9Hhh3317n3uVezxKb-PizCk3WKJOWdqCA5ISIRV3v3YL32UEoOhhDotnhhcw-2n_mHcZjw0vjYihRsv3cOKrYNjBRmLo0ax9qONi5hqWxqH6Jr9HAMEUu_WFaKZG0Sy2RKxlrYpmffBeB0Rc7NyoR-P8gSjo1tE_8CO5Gc-9_BfyNbRj0JpdRLRRs7CZdH2qeiWx2NHdmRk1vuLyumulojX0Aixo9gf5-OCKiJg1TcKWmm-moVma_zrcx4C8k1lB0pJtJ8op8Kn9fFryX9kwrXNoN2BecwlAiZ6KO6ciX3VVG0TpRZV3sKFAxlelD_Sm3HGrPOTPdsyNy7Wku4sQplrgPq1TFhTGK_pL4BvuIJi6Soj5kdaMPRw_MW46rhz8o4keaouC5-bdg"
 		//return token, errors.New("Token is empty")
 		return token
 	}
@@ -64,39 +64,4 @@ func stringInSlice(a string, list []string) bool {
 		}
 	}
 	return false
-}
-
-type ErrorDict struct {
-	Detail string `json:"detail,omitempty"`
-	Code   string `json:"code,omitempty"`
-	MsgKey string `json:"msg_key,omitempty"`
-}
-
-type ErrorResponse struct {
-	Errors []ErrorDict `json:"errors,omitempty"`
-}
-
-type BaseListResponse struct {
-	Count    int    `json:"count,omitempty"`
-	Next     string `json:"next,omitempty"`
-	Previous string `json:"previous,omitempty"`
-}
-
-type Tags struct {
-	Colour      string `json:"colour,omitempty"`
-	VerboseName string `json:"verbose_name,omitempty"`
-}
-
-type NameResourcePool struct {
-	Id          string `json:"id,omitempty"`
-	VerboseName string `json:"verbose_name,omitempty"`
-}
-
-type NameDomain struct {
-	Id          string `json:"id,omitempty"`
-	VerboseName string `json:"verbose_name,omitempty"`
-}
-
-type IdempotencyKeyBase struct {
-	IdempotencyKey string `json:"idempotency_key,omitempty"`
 }

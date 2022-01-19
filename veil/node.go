@@ -12,11 +12,6 @@ type NodeService struct {
 	client Client
 }
 
-type NameCluster struct {
-	Id          string `json:"id,omitempty"`
-	VerboseName string `json:"verbose_name,omitempty"`
-}
-
 type NodeObjectsList struct {
 	Id                 string             `json:"id,omitempty"`
 	VerboseName        string             `json:"verbose_name,omitempty"`

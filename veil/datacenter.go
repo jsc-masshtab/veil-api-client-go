@@ -6,7 +6,7 @@ import (
 	"net/url"
 )
 
-const baseDataCenterUrl string = "/api/datacenters/"
+const baseDataCenterUrl = baseApiUrl + "datacenters/"
 
 type DataCenterService struct {
 	client Client

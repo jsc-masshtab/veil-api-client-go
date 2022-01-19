@@ -6,15 +6,10 @@ import (
 	"net/url"
 )
 
-const baseClusterUrl string = "/api/clusters/"
+const baseClusterUrl = baseApiUrl + "clusters/"
 
 type ClusterService struct {
 	client Client
-}
-
-type NameDatacenter struct {
-	Id          string `json:"id,omitempty"`
-	VerboseName string `json:"verbose_name,omitempty"`
 }
 
 type ClusterObjectsList struct {

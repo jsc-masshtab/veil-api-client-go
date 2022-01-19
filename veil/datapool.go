@@ -12,22 +12,6 @@ type DataPoolService struct {
 	client Client
 }
 
-type NameSharedStorage struct {
-	Id          string `json:"id,omitempty"`
-	VerboseName string `json:"verbose_name,omitempty"`
-}
-
-type NameLun struct {
-	Id     string `json:"id,omitempty"`
-	Device string `json:"device,omitempty"`
-	Status string `json:"status,omitempty"`
-}
-
-type NameClusterStorage struct {
-	Id          string `json:"id,omitempty"`
-	VerboseName string `json:"verbose_name,omitempty"`
-}
-
 type NodesConnected struct {
 	Id               string `json:"id,omitempty"`
 	VerboseName      string `json:"verbose_name,omitempty"`

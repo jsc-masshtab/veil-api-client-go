@@ -3,24 +3,24 @@ package veil
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
+	"time"
 )
 
-const baseDomainUrl string = "/api/domains/"
+const baseDomainUrl = baseApiUrl + "domains/"
 
 type DomainService struct {
 	client Client
 }
 
-type NameNode struct {
-	Id          string `json:"id,omitempty"`
-	VerboseName string `json:"verbose_name,omitempty"`
-}
-
 type GuestUtils struct {
-	Id          string `json:"id,omitempty"`
-	VerboseName string `json:"verbose_name,omitempty"`
+	Version    string   `json:"version,omitempty"`
+	Hostname   string   `json:"hostname,omitempty"`
+	Ipv4       []string `json:"ipv4,omitempty"`
+	Interfaces []string `json:"interfaces,omitempty"`
+	QemuState  bool     `json:"qemu_state,omitempty"`
 }
 
 type DomainObjectsList struct {
@@ -102,6 +102,11 @@ type CloudConfig struct {
 	MetaData string `json:"meta_data,omitempty"`
 }
 
+type CloudInitConfig struct {
+	CloudInitConfig CloudConfig `json:"cloud_init_config,omitempty"`
+	CloudInit       bool        `json:"cloud_init,omitempty"`
+}
+
 type CpuTopology struct {
 	CpuCount    int `json:"cpu_count,omitempty"`     // Group 1
 	CpuCountMax int `json:"cpu_count_max,omitempty"` // Group 1
@@ -142,6 +147,7 @@ type DomainCreateConfig struct {
 
 type DomainMultiCreateConfig struct {
 	DomainCreateConfig
+	CloudInitConfig
 	Safety             bool                `json:"safety,omitempty"`
 	StartOnBoot        bool                `json:"start_on_boot,omitempty"`
 	CleanType          string              `json:"clean_type,omitempty"`
@@ -161,8 +167,6 @@ type DomainMultiCreateConfig struct {
 	Template           string              `json:"template,omitempty"`
 	CpuTopology        []CpuTopology       `json:"cpu_topology,omitempty"`
 	SshInject          *SshInject          `json:"ssh_inject,omitempty"`
-	CloudInit          bool                `json:"cloud_init,omitempty"`
-	CloudInitConfig    *CloudConfig        `json:"cloud_init_config,omitempty"`
 }
 
 type DomainUpdateConfig struct {
@@ -180,17 +184,54 @@ type DomainUpdateConfig struct {
 	Priority    int      `json:"priority,omitempty"`
 }
 
+type DomainCloneConfig struct {
+	Node         string `json:"node,omitempty"`
+	ResourcePool string `json:"resource_pool,omitempty"`
+	VerboseName  string `json:"verbose_name,omitempty"`
+	DataPool     string `json:"datapool,omitempty"`
+	// snapshot
+	Count       int      `json:"count,omitempty"`
+	DomainsIds  []string `json:"domains_ids,omitempty"`
+	StartOn     bool     `json:"start_on,omitempty"`
+	Template    bool     `json:"template"`
+	Replication bool     `json:"replication,omitempty"`
+}
+
 func (entity *DomainObject) Refresh(client *WebClient) (*DomainObject, error) {
 	_, err := client.ExecuteRequest("GET", fmt.Sprint(baseDomainUrl, entity.Id, "/"), []byte{}, entity)
 	return entity, err
 }
 
+func (entity *DomainObject) WaitForGA(client *WebClient, timeout int64) (*DomainObject, error) {
+	if timeout == 0 {
+		timeout = 420
+	}
+	timeoutTime := time.Now().Unix() + timeout
+	for true {
+		_, err := client.ExecuteRequest("GET", fmt.Sprint(baseDomainUrl, entity.Id, "/"), []byte{}, entity)
+		if err != nil {
+			return entity, err
+		}
+		if entity.GuestUtils.QemuState == true {
+			return entity, nil
+		}
+		timeNow := time.Now().Unix()
+		//diff := timeNow - timeoutTime
+		//log.Printf("timeNow: %d, timeoutTime: %d, diff: %d", timeNow, timeoutTime, diff)
+		if timeNow > timeoutTime {
+			errMsg := fmt.Sprintf("waiting guest agent timeout error for domain %s.", entity.VerboseName)
+			return entity, fmt.Errorf(errMsg)
+		}
+		time.Sleep(time.Second * 5)
+		log.Printf("waiting guest agent for domain %s (max %d seconds)", entity.VerboseName, timeout)
+	}
+
+	return entity, nil
+}
+
 func (d *DomainService) List() (*DomainsResponse, *http.Response, error) {
-
 	response := new(DomainsResponse)
-
 	res, err := d.client.ExecuteRequest("GET", baseDomainUrl, []byte{}, response)
-
 	return response, res, err
 }
 
@@ -219,12 +260,12 @@ func (d *DomainService) Create(config DomainCreateConfig) (*DomainObject, *http.
 func (d *DomainService) MultiCreate(config DomainMultiCreateConfig) (*DomainObject, *http.Response, error) {
 	domain := new(DomainObject)
 	b, _ := json.Marshal(config)
-	asyncResp := new(AsyncResponse)
+	asyncResp := new(AsyncEntityResponse)
 	res, err := d.client.ExecuteRequest("POST", fmt.Sprint(baseDomainUrl, "multi-create-domain/?async=1"), b, asyncResp)
 	if err != nil {
 		return domain, res, err
 	}
-	WaitTaskReady(asyncResp.Task.Id, true, 0, true)
+	WaitTaskReady(d.client.RetClient(), asyncResp.Task.Id, true, 0, true)
 	res, err = d.client.ExecuteRequest("GET", fmt.Sprint(baseDomainUrl, asyncResp.Entity, "/"), []byte{}, domain)
 	return domain, res, err
 }
@@ -284,13 +325,35 @@ func (d *DomainService) Template(domain *DomainObject, template bool) (*DomainOb
 	return domain, res, err
 }
 
-func (d *DomainService) Remove(domainID string) (bool, *http.Response, error) {
+func (d *DomainService) Clone(Id string, config DomainCloneConfig) (*DomainObject, *http.Response, error) {
+	domain := new(DomainObject)
+	b, _ := json.Marshal(config)
+	asyncResp := new(AsyncEntityResponse)
+	res, err := d.client.ExecuteRequest("POST", fmt.Sprint(baseDomainUrl, Id, "/clone/?async=1"), b, asyncResp)
+	if err != nil {
+		return domain, res, err
+	}
+	client := d.client.RetClient()
+	taskObj := WaitTaskReady(client, asyncResp.Task.Id, true, 0, true)
+	res, err = client.Task.Response(taskObj.Id, domain)
+	return domain, res, err
+}
 
-	res, err := d.client.ExecuteRequest("POST", fmt.Sprint(baseDomainUrl, domainID, "/remove/"), []byte{}, nil)
+func (d *DomainService) CloudInit(domain *DomainObject, config CloudInitConfig) (*DomainObject, *http.Response, error) {
+	b, _ := json.Marshal(config)
+	res, err := d.client.ExecuteRequest("PUT", fmt.Sprint(baseDomainUrl, domain.Id, "/cloud-init/"), b, domain)
+	return domain, res, err
+}
 
+func (d *DomainService) Remove(domainID string, full bool, force bool) (bool, *http.Response, error) {
+	body := struct {
+		Force bool `json:"force"`
+		Full  bool `json:"full"`
+	}{force, full}
+	b, _ := json.Marshal(body)
+	res, err := d.client.ExecuteRequest("POST", fmt.Sprint(baseDomainUrl, domainID, "/remove/"), b, nil)
 	if err != nil {
 		return false, res, err
 	}
-
 	return true, res, err
 }

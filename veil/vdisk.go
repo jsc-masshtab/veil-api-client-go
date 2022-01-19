@@ -13,12 +13,6 @@ type VdiskService struct {
 	client Client
 }
 
-type NameTypeDataPool struct {
-	Id          string `json:"id,omitempty"`
-	VerboseName string `json:"verbose_name,omitempty"`
-	Type        string `json:"type,omitempty"`
-}
-
 type VdiskSnapshot struct {
 	Id     string `json:"id,omitempty"`
 	Source string `json:"source,omitempty"`
@@ -136,9 +130,9 @@ func (d *VdiskService) Create(config *VdiskCreate, asynced bool) (*VdiskObject, 
 		res, err := d.client.ExecuteRequest("POST", baseVdiskUrl, b, vdisk)
 		return vdisk, res, err
 	}
-	asyncResp := new(AsyncResponse)
+	asyncResp := new(AsyncEntityResponse)
 	res, err := d.client.ExecuteRequest("POST", baseVdiskUrl+"?async=1", b, asyncResp)
-	WaitTaskReady(asyncResp.Task.Id, true, 0, true)
+	WaitTaskReady(d.client.RetClient(), asyncResp.Task.Id, true, 0, true)
 	res, err = d.client.ExecuteRequest("GET", fmt.Sprint(baseVdiskUrl, asyncResp.Entity, "/"), []byte{}, vdisk)
 	return vdisk, res, err
 }

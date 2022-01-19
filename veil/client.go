@@ -12,10 +12,13 @@ import (
 	"net/http"
 )
 
+const baseApiUrl string = "/api/"
+
 // Client Interface of Client for mocking data receiving in tests
 type Client interface {
 	ExecuteRequest(method, url string, body []byte, object interface{}) (*http.Response, error)
 	Execute(req *http.Request) (*http.Response, error)
+	RetClient() *WebClient
 }
 
 type WebClient struct {
@@ -129,6 +132,9 @@ func (client *WebClient) ExecuteRequest(method string, url string, body []byte, 
 
 // Execute user HTTP Request
 func (client *WebClient) Execute(req *http.Request) (*http.Response, error) {
-	res, err := client.HTTPClient.Do(req)
-	return res, err
+	return client.HTTPClient.Do(req)
+}
+
+func (client *WebClient) RetClient() *WebClient {
+	return client
 }
