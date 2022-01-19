@@ -6,7 +6,7 @@ import (
 	"net/url"
 )
 
-const baseUserUrl string = "/api/users/"
+const baseUserUrl = baseApiUrl + "users/"
 
 type UserService struct {
 	client Client

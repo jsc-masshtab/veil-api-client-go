@@ -6,7 +6,7 @@ import (
 	"net/url"
 )
 
-const baseDataPoolUrl string = "/api/data-pools/"
+const baseDataPoolUrl = baseApiUrl + "data-pools/"
 
 type DataPoolService struct {
 	client Client

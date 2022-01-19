@@ -5,7 +5,7 @@ import (
 	"net/http"
 )
 
-const baseEventUrl string = "/api/events/"
+const baseEventUrl = baseApiUrl + "events/"
 
 type EventService struct {
 	client Client

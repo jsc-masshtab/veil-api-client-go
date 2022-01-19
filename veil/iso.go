@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 )
 
-const baseIsoUrl string = "/api/iso/"
+const baseIsoUrl = baseApiUrl + "iso/"
 
 type IsoService struct {
 	client Client

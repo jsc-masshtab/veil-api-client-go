@@ -7,7 +7,7 @@ import (
 	"net/url"
 )
 
-const baseVdiskUrl string = "/api/vdisks/"
+const baseVdiskUrl = baseApiUrl + "vdisks/"
 
 type VdiskService struct {
 	client Client

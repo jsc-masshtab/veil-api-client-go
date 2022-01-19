@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-const baseTaskUrl string = "/api/tasks/"
+const baseTaskUrl = baseApiUrl + "tasks/"
 
 // TaskStatusCheckInterval - time between async checks in seconds
 const TaskStatusCheckInterval = 1

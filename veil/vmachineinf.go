@@ -6,7 +6,7 @@ import (
 	"net/url"
 )
 
-const baseVMachineInfUrl string = "/api/vmachine-infs/"
+const baseVMachineInfUrl = baseApiUrl + "vmachine-infs/"
 
 type VMachineInfService struct {
 	client Client
