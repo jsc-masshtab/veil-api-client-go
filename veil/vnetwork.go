@@ -6,7 +6,7 @@ import (
 	"net/url"
 )
 
-const baseVnetUrl string = "/api/vnetworks/"
+const baseVnetUrl = baseApiUrl + "vnetworks/"
 
 type VnetService struct {
 	client Client
