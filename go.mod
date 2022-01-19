@@ -1,4 +1,4 @@
-module gitlab.bazalt.team/dev/veil-api-client-go
+module github.com/jsc-masshtab/veil-api-client-go
 
 go 1.17
 

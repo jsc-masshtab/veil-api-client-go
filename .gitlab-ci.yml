@@ -3,7 +3,7 @@ image: golang:latest
 variables:
   BIN_NAME: veil-api-client-go
   ARTIFACTS_DIR: artifacts
-  GO_PROJECT: http://gitlab.bazalt.team/dev/veil-api-client-go
+  GO_PROJECT: https://github.com/jsc-masshtab/veil-api-client-go
 
 stages:
   - build
