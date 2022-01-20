@@ -35,6 +35,7 @@ type WebClient struct {
 	DataPool    *DataPoolService
 	Vdisk       *VdiskService
 	Iso         *IsoService
+	Library     *LibraryService
 	Task        *TaskService
 	Event       *EventService
 	User        *UserService
@@ -76,6 +77,7 @@ func NewClient(apiUrl string, token string, insecure bool) *WebClient {
 	client.DataPool = &DataPoolService{client}
 	client.Vdisk = &VdiskService{client}
 	client.Iso = &IsoService{client}
+	client.Library = &LibraryService{client}
 	client.Task = &TaskService{client}
 	client.Event = &EventService{client}
 	client.User = &UserService{client}

@@ -86,17 +86,14 @@ func (d *IsoService) ListParams(queryParams map[string]string) (*IsosResponse, *
 }
 
 func (d *IsoService) Get(Id string) (*IsoObject, *http.Response, error) {
-
-	node := new(IsoObject)
-
-	res, err := d.client.ExecuteRequest("GET", fmt.Sprint(baseIsoUrl, Id, "/"), []byte{}, node)
-
-	return node, res, err
+	entity := new(IsoObject)
+	res, err := d.client.ExecuteRequest("GET", fmt.Sprint(baseIsoUrl, Id, "/"), []byte{}, entity)
+	return entity, res, err
 }
 
 func (d *IsoService) Create(DataPoolId string, FileName string) (*IsoObject, *http.Response, error) {
 	// Part 1
-	iso := new(IsoObject)
+	entity := new(IsoObject)
 
 	body := struct {
 		DataPoolId string `json:"datapool,omitempty"`
@@ -104,7 +101,7 @@ func (d *IsoService) Create(DataPoolId string, FileName string) (*IsoObject, *ht
 	}{DataPoolId, FileName}
 
 	b, _ := json.Marshal(body)
-	res, err := d.client.ExecuteRequest("PUT", baseIsoUrl, b, iso)
+	res, err := d.client.ExecuteRequest("PUT", baseIsoUrl, b, entity)
 	if err != nil {
 		return nil, res, err
 	}
@@ -113,7 +110,7 @@ func (d *IsoService) Create(DataPoolId string, FileName string) (*IsoObject, *ht
 	pwd, _ := os.Getwd()
 	file, err := os.Open(pwd + "/file_data/" + FileName)
 	if err != nil {
-		return iso, res, err
+		return entity, res, err
 	}
 	defer file.Close()
 
@@ -127,7 +124,7 @@ func (d *IsoService) Create(DataPoolId string, FileName string) (*IsoObject, *ht
 	if err != nil {
 		return nil, res, err
 	}
-	request, err := http.NewRequest("POST", fmt.Sprint(GetEnvUrl(), iso.UploadUrl), fileBody)
+	request, err := http.NewRequest("POST", fmt.Sprint(GetEnvUrl(), entity.UploadUrl), fileBody)
 	err = writer.Close()
 	if err != nil {
 		return nil, res, err
@@ -138,44 +135,44 @@ func (d *IsoService) Create(DataPoolId string, FileName string) (*IsoObject, *ht
 		log.Fatal(err)
 	}
 	defer response.Body.Close()
-	return iso, response, err
+	return entity, response, err
 }
 
-func (d *IsoService) Download(iso *IsoObject) (*IsoObject, *http.Response, error) {
+func (d *IsoService) Download(entity *IsoObject) (*IsoObject, *http.Response, error) {
 	// Get download_url
-	res, err := d.client.ExecuteRequest("PUT", fmt.Sprint(baseIsoUrl, iso.Id, "/download/"), []byte{}, iso)
+	res, err := d.client.ExecuteRequest("PUT", fmt.Sprint(baseIsoUrl, entity.Id, "/download/"), []byte{}, entity)
 	if err != nil {
-		return iso, res, err
+		return entity, res, err
 	}
 	// Create the file
 	pwd, _ := os.Getwd()
-	filePath := filepath.Dir(pwd) + "/file_data/downloaded_" + iso.FileName
+	filePath := filepath.Dir(pwd) + "/file_data/downloaded_" + entity.FileName
 	out, err := os.Create(filePath)
 	defer out.Close()
 
 	// Get the data
-	resp, err := http.Get(fmt.Sprint(GetEnvUrl(), iso.DownloadUrl))
+	resp, err := http.Get(fmt.Sprint(GetEnvUrl(), entity.DownloadUrl))
 	if err != nil {
-		return iso, res, fmt.Errorf("get the data error: %w", err)
+		return entity, res, fmt.Errorf("get the data error: %w", err)
 	}
 	defer resp.Body.Close()
 
 	// Check server response
 	if resp.StatusCode != http.StatusOK {
 		errF := fmt.Errorf("bad status: %s", resp.Status)
-		return iso, res, errF
+		return entity, res, errF
 	}
 
 	// Writer the body to file
 	_, err = io.Copy(out, resp.Body)
 	if err != nil {
-		return iso, res, fmt.Errorf("write the body to file error: %w", err)
+		return entity, res, fmt.Errorf("write the body to file error: %w", err)
 	}
 
 	// Delete file
 	err = os.Remove(filePath)
 	if err != nil {
-		return iso, res, fmt.Errorf("delete file error: %w", err)
+		return entity, res, fmt.Errorf("delete file error: %w", err)
 	}
-	return iso, res, nil
+	return entity, res, nil
 }

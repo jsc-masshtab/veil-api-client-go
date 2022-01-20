@@ -1,18 +1,24 @@
 package veil
 
 import (
+	"bytes"
 	"encoding/base64"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/ssh"
+	"io/ioutil"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
 var TestDomainName = NameGenerator("domain")
 var TestDomainID = uuid.NewString()
 var TestPackerTemplateName = "debian_cloud"
+var TestPackerVMName = "packer_vm"
 
 func Test_DomainList(t *testing.T) {
 	client := NewClient("", "", false)
@@ -148,20 +154,18 @@ func Test_DomainMultiCreateThin(t *testing.T) {
 	return
 }
 
-func Test_DomainPacker_1(t *testing.T) {
+func Test_Domain_Packer_Clone(t *testing.T) {
 	/*
 		Вариант 1. Имитация packer clone
 		Условия:
 		1. Есть готовый шаблон ВМ с образом cloud_init
 		Шаги:
-		1. Клонируем шаблон с переводом в ВМ
-		2. Добавляем к ней конфиг cloud_init
-		3. Включаем ВМ
-		4. Ждем гостевого агента
-		5. Подключаемся по ssh
-		6. Инициализируем её (provisioning)
-		7. Выключаем ВМ
-		8. Переводим её в шаблон
+		1. Клонируем шаблон с переводом в ВМ c конфигом cloud_init и включением
+		2. Ждем гостевого агента
+		3. Подключаемся по ssh
+		4. Инициализируем её (provisioning)
+		5. Выключаем ВМ
+		6. Переводим её в шаблон
 	*/
 	client := NewClient("", "", false)
 	// check templates
@@ -174,17 +178,16 @@ func Test_DomainPacker_1(t *testing.T) {
 	if len(templatesResponse.Results) == 0 {
 		t.SkipNow()
 	}
+
 	// 1. Клонируем шаблон с переводом в ВМ
-	domainName := "packer_vm"
 	cloneConfig := new(DomainCloneConfig)
-	cloneConfig.VerboseName = domainName
+	cloneConfig.VerboseName = TestPackerVMName
 	cloneConfig.Template = false
-	baseTemplate := templatesResponse.Results[0]
-	newDomain, _, err := client.Domain.Clone(baseTemplate.Id, *cloneConfig)
-	require.Nil(t, err, err)
-	assert.Equal(t, newDomain.VerboseName, cloneConfig.VerboseName, fmt.Sprintf("Domain VerboseName should be %s", domainName))
-	// 2. Добавляем к ней конфиг cloud_init
+	cloneConfig.StartOn = true
+	cloneConfig.CloudInit = true
+
 	cloudInitConf := new(CloudConfig)
+	baseUser := "user"
 	userData := `#cloud-config
 
 groups:
@@ -195,12 +198,12 @@ package_upgrade: false
 
 users:
   - default
-  - name: user
+  - name: %s
     groups: sudo
     sudo: ALL = (ALL) NOPASSWD:ALL
     shell: /bin/bash
     lock_passwd: false
-    plain_text_passwd: user
+    plain_text_passwd: %s
     # passwd: $6$rounds = 4096$9cYh.jYsend9bOZ$VBqFtH6Jc6cgpYga.sWD.G5l/h.Fedn.CRO7ouw7S7JiMbwXvf5cuENpOk9W4pqAAmF7vxKJy62QCHZ9xVvAd0
     ssh_authorized_keys:
       - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCWRyWsZAFDAiUuCPAz0cN1jFREnnBdLkpIoQygLJqkrzh85l47Omib+IlryIaa7QsjaKhI2dYUfviTiOeUM0yLH17YD7IR+8n2uADy3kNHbjwDn3+9OOfCGExLXH6Az1imenWJj6ErLmelTJi66xLWcGQhBNtr37XwOlL8eguP4TwZ1LmoUqWseKXEerUoOKqP2abYu5zgWNtkWJ5604V8lvQt5JgMJMqr7oGCIT/DgD/ndqOOu0G6698deEk/ooADVB1CUglrPni+ZPBHhwwMrovpkKgwbOTUXrmE5I9OrmsjLGiaLkjsSyQrfx5xfrXhogbCE174PWJaCy8zD7HLGArmhsBnMz8FKEbX/We547llCKGPGmc4H6IMhbryiZky3XuGK3nBKvmOiwwKUNoamt7yXUIRfFcoOqhC63DZfHT/4OvfvKnv3HtnY2VoDgZCaYCcT6ZZwntk2p6LY2zoDwqThXLtvZwouPkhtdOs2ATvW04CMnXCKBsu2W76c60= user@user-To-be-filled-by-O-E-M
@@ -218,21 +221,62 @@ runcmd:
   - systemctl start qemu-guest-agent
 
 final_message: "The system is finally up, after $UPTIME seconds"`
-	sDec := base64.StdEncoding.EncodeToString([]byte(userData))
-	fmt.Println(sDec)
-	cloudInitConf.MetaData = "Cmluc3RhbmNlLWlkOiBiNzNlODZkNi02Yjc3LTRkMTQtYmNlZi1hMWRmNzM2Y2U4N2UKbG9jYWwtaG9zdG5hbWU6IHNvbWVkb21haW4KCg=="
-	cloudInitConf.UserData = sDec
-	cloudInit := new(CloudInitConfig)
-	cloudInit.CloudInit = true
-	cloudInit.CloudInitConfig = *cloudInitConf
-	newDomain, _, err = client.Domain.CloudInit(newDomain, *cloudInit)
-	assert.Nil(t, err)
-	// 3. Включаем ВМ
-	_, _, err = client.Domain.Start(newDomain)
-	assert.Nil(t, err)
-	// 4. Ждем гостевого агента
+	userData = fmt.Sprintf(userData, baseUser, baseUser)
+	cloudInitConf.UserData = base64.StdEncoding.EncodeToString([]byte(userData))
+
+	//	metaData := `instance-id: %s
+	//local-hostname: %s
+	//`
+	//metaData = fmt.Sprintf(metaData, newDomain.Id, newDomain.VerboseName)
+	//cloudInitConf.MetaData = base64.StdEncoding.EncodeToString([]byte(metaData))
+	cloneConfig.CloudInitConfig = *cloudInitConf
+
+	baseTemplate := templatesResponse.Results[0]
+	newDomain, _, err := client.Domain.Clone(baseTemplate.Id, *cloneConfig)
+	require.Nil(t, err, err)
+	assert.Equal(t, newDomain.VerboseName, cloneConfig.VerboseName, fmt.Sprintf("Domain VerboseName should be %s", TestPackerVMName))
+
+	// 2. Ждем гостевого агента
 	newDomain, err = newDomain.WaitForGA(client, 80)
+	assert.NotEmpty(t, newDomain.GuestUtils.Ipv4, "Domain %s ipV4 in GuestUtils should not be empty", newDomain.VerboseName)
+
+	// 3. Подключаемся по ssh
+	sshAddress := newDomain.GuestUtils.Ipv4[0]
+	key, err := ioutil.ReadFile(filepath.Join(os.Getenv("HOME"), ".ssh", "id_rsa"))
+	require.Nil(t, err)
+	signer, err := ssh.ParsePrivateKey(key) // Создания подписанта приватного ключа
+	require.Nil(t, err)
+	sshConfig := &ssh.ClientConfig{
+		User: baseUser,
+		Auth: []ssh.AuthMethod{
+			ssh.PublicKeys(signer),
+		},
+		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
+	}
+	connection, err := ssh.Dial("tcp", sshAddress+":22", sshConfig)
+	defer connection.Close()
+	require.Nil(t, err, "Failed to dial: %s", err)
+	session, err := connection.NewSession()
+	defer session.Close()
+	require.Nil(t, err, "Failed to create session: %s", err)
+
+	// 4. Инициализируем её (provisioning)
+
+	cmd := "ls -la /"
+	var stdoutBuf bytes.Buffer
+	session.Stdout = &stdoutBuf
+	err = session.Run(cmd)
 	assert.Nil(t, err)
+	fmt.Println(stdoutBuf.String())
+
+	// 5. Выключаем ВМ
+	newDomain, _, err = client.Domain.Shutdown(newDomain, true)
+	assert.Nil(t, err)
+
+	// 6. Переводим её в шаблон
+	newDomain, _, err = client.Domain.Template(newDomain, true)
+	assert.Nil(t, err)
+	assert.True(t, newDomain.Template)
 
 	// Удаляем ВМ
 	status, _, err := client.Domain.Remove(newDomain.Id, true, false)
@@ -242,15 +286,14 @@ final_message: "The system is finally up, after $UPTIME seconds"`
 	return
 }
 
-func Test_DomainPacker_2(t *testing.T) {
+func Test_Domain_Packer_Qcow2(t *testing.T) {
 	/*
-		Вариант 2. Имитация packer iso
+		Вариант 2. Имитация packer qcow2
 		Условия:
-		1a. Есть локальный образ с cloud_init на машине, где запускается packer
-		1б. Есть образ с cloud_init для загрузки по url
-		1в. Есть образ с cloud_init уже в VeiL
+		1a. Есть локальный qcow2 с cloud_init на машине, где запускается packer
+		1б. Есть диск/файл qcow2 с cloud_init уже в VeiL
 		Шаги:
-		1. Загружаем образ или выбираем из имеющихся
+		1. Загружаем qcow2 или выбираем из имеющихся
 		2. Создаем ВМ с образом cloud_init
 		3. Включаем ВМ
 		4. Ждем гостевого агента
@@ -258,7 +301,30 @@ func Test_DomainPacker_2(t *testing.T) {
 		6. Инициализируем её (provisioning)
 		7. Выключаем ВМ
 		8. Переводим её в шаблон
+	*/
+	//t.SkipNow()
+	//client := NewClient("", "", false)
 
+	return
+}
+
+func Test_Domain_Packer_Iso(t *testing.T) {
+	/*
+		Вариант 2. Имитация packer iso
+		Условия:
+		1a. Есть локальный образ с cloud_init на машине, где запускается packer
+		1б. Есть образ с cloud_init для загрузки по url
+		1в. Есть образ с cloud_init уже в VeiL
+		1г. Есть диск/файл qcow2 с cloud_init уже в VeiL
+		Шаги:
+		1. Загружаем образ/qcow2 или выбираем из имеющихся
+		2. Создаем ВМ с образом cloud_init
+		3. Включаем ВМ
+		4. Ждем гостевого агента
+		5. Подключаемся по ssh
+		6. Инициализируем её (provisioning)
+		7. Выключаем ВМ
+		8. Переводим её в шаблон
 	*/
 	t.SkipNow()
 	//client := NewClient("", "", false)

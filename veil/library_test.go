@@ -5,14 +5,14 @@ import (
 	"testing"
 )
 
-func Test_IsoListGet(t *testing.T) {
+func Test_LibraryListGet(t *testing.T) {
 	client := NewClient("", "", false)
-	response, _, err := client.Iso.List()
+	response, _, err := client.Library.List()
 	assert.Nil(t, err)
 	for _, v := range response.Results {
-		entity, _, err := client.Iso.Get(v.Id)
+		entity, _, err := client.Library.Get(v.Id)
 		assert.Nil(t, err)
-		assert.NotEqual(t, entity.Id, "", "Iso Id can not be empty")
+		assert.NotEqual(t, entity.Id, "", "Library Id can not be empty")
 
 		break
 	}
@@ -20,7 +20,7 @@ func Test_IsoListGet(t *testing.T) {
 	return
 }
 
-func Test_IsoUpload(t *testing.T) {
+func Test_LibraryUpload(t *testing.T) {
 	// TODO fix upload files
 	t.SkipNow()
 	client := NewClient("", "", false)
@@ -30,16 +30,16 @@ func Test_IsoUpload(t *testing.T) {
 		t.SkipNow()
 	}
 	firstDp := response.Results[0]
-	iso, _, err := client.Iso.Create(firstDp.Id, "test_live.iso")
+	entity, _, err := client.Library.Create(firstDp.Id, "base_domain.xml")
 	assert.Nil(t, err)
-	assert.NotEqual(t, iso.Id, "", "Iso Id can not be empty")
+	assert.NotEqual(t, entity.Id, "", "file Id can not be empty")
 
 	return
 }
 
-func Test_IsoDownload(t *testing.T) {
+func Test_LibraryDownload(t *testing.T) {
 	client := NewClient("", "", false)
-	response, _, err := client.Iso.List()
+	response, _, err := client.Library.List()
 	assert.Nil(t, err)
 	if len(response.Results) == 0 {
 		t.SkipNow()
@@ -49,10 +49,10 @@ func Test_IsoDownload(t *testing.T) {
 		if v.Size >= 50*1024*1024 {
 			continue
 		}
-		iso, _, err := client.Iso.Get(v.Id)
+		entity, _, err := client.Library.Get(v.Id)
 		assert.Nil(t, err)
-		assert.NotEqual(t, iso.Id, "", "Iso Id can not be empty")
-		iso, _, err = client.Iso.Download(iso)
+		assert.NotEqual(t, entity.Id, "", "file Id can not be empty")
+		entity, _, err = client.Library.Download(entity)
 		assert.Nil(t, err)
 		break
 	}

@@ -102,7 +102,7 @@ type CloudConfig struct {
 	MetaData string `json:"meta_data,omitempty"`
 }
 
-type CloudInitConfig struct {
+type CloudInitConf struct {
 	CloudInitConfig CloudConfig `json:"cloud_init_config,omitempty"`
 	CloudInit       bool        `json:"cloud_init,omitempty"`
 }
@@ -147,7 +147,7 @@ type DomainCreateConfig struct {
 
 type DomainMultiCreateConfig struct {
 	DomainCreateConfig
-	CloudInitConfig
+	CloudInitConf
 	Safety             bool                `json:"safety,omitempty"`
 	StartOnBoot        bool                `json:"start_on_boot,omitempty"`
 	CleanType          string              `json:"clean_type,omitempty"`
@@ -185,6 +185,7 @@ type DomainUpdateConfig struct {
 }
 
 type DomainCloneConfig struct {
+	CloudInitConf
 	Node         string `json:"node,omitempty"`
 	ResourcePool string `json:"resource_pool,omitempty"`
 	VerboseName  string `json:"verbose_name,omitempty"`
@@ -206,24 +207,23 @@ func (entity *DomainObject) WaitForGA(client *WebClient, timeout int64) (*Domain
 	if timeout == 0 {
 		timeout = 420
 	}
-	timeoutTime := time.Now().Unix() + timeout
+	timeStart := time.Now().Unix()
 	for true {
 		_, err := client.ExecuteRequest("GET", fmt.Sprint(baseDomainUrl, entity.Id, "/"), []byte{}, entity)
 		if err != nil {
 			return entity, err
 		}
 		if entity.GuestUtils.QemuState == true {
+			log.Printf("successfully waiting guest agent of domain %s", entity.VerboseName)
 			return entity, nil
 		}
+		time.Sleep(time.Second * 5)
 		timeNow := time.Now().Unix()
-		//diff := timeNow - timeoutTime
-		//log.Printf("timeNow: %d, timeoutTime: %d, diff: %d", timeNow, timeoutTime, diff)
-		if timeNow > timeoutTime {
+		if timeNow > timeStart+timeout {
 			errMsg := fmt.Sprintf("waiting guest agent timeout error for domain %s.", entity.VerboseName)
 			return entity, fmt.Errorf(errMsg)
 		}
-		time.Sleep(time.Second * 5)
-		log.Printf("waiting guest agent for domain %s (max %d seconds)", entity.VerboseName, timeout)
+		log.Printf("waiting %d sec for guest agent of domain %s (max %dsec)", timeNow-timeStart, entity.VerboseName, timeout)
 	}
 
 	return entity, nil
@@ -339,7 +339,7 @@ func (d *DomainService) Clone(Id string, config DomainCloneConfig) (*DomainObjec
 	return domain, res, err
 }
 
-func (d *DomainService) CloudInit(domain *DomainObject, config CloudInitConfig) (*DomainObject, *http.Response, error) {
+func (d *DomainService) CloudInit(domain *DomainObject, config CloudInitConf) (*DomainObject, *http.Response, error) {
 	b, _ := json.Marshal(config)
 	res, err := d.client.ExecuteRequest("PUT", fmt.Sprint(baseDomainUrl, domain.Id, "/cloud-init/"), b, domain)
 	return domain, res, err
