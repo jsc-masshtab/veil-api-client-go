@@ -148,25 +148,34 @@ type DomainCreateConfig struct {
 type DomainMultiCreateConfig struct {
 	DomainCreateConfig
 	CloudInitConf
-	Safety             bool                `json:"safety,omitempty"`
-	StartOnBoot        bool                `json:"start_on_boot,omitempty"`
-	CleanType          string              `json:"clean_type,omitempty"`
-	CleanCount         int                 `json:"clean_count,omitempty"`
-	MemoryMinGuarantee int                 `json:"memory_min_guarantee,omitempty"`
-	MemoryShares       int                 `json:"memory_shares,omitempty"`
-	MemoryLimit        int                 `json:"memory_limit,omitempty"`
-	Vdisks             []VdiskAttach       `json:"vdisks,omitempty"`
-	Isos               []IsoAttach         `json:"isos,omitempty"`
-	NewVdisks          []VdiskCreateAttach `json:"new_vdisks,omitempty"`
-	NewIsos            []IsoSoftAttach     `json:"new_isos,omitempty"`
-	StartOn            bool                `json:"start_on,omitempty"`
-	RemoteAccess       bool                `json:"remote_access,omitempty"`
-	Parent             string              `json:"parent,omitempty"`
-	Thin               bool                `json:"thin,omitempty"`
-	Clone              bool                `json:"clone,omitempty"`
-	Template           string              `json:"template,omitempty"`
-	CpuTopology        []CpuTopology       `json:"cpu_topology,omitempty"`
-	SshInject          *SshInject          `json:"ssh_inject,omitempty"`
+	Safety             bool          `json:"safety,omitempty"`
+	StartOnBoot        bool          `json:"start_on_boot,omitempty"`
+	CleanType          string        `json:"clean_type,omitempty"`
+	CleanCount         int           `json:"clean_count,omitempty"`
+	MemoryMinGuarantee int           `json:"memory_min_guarantee,omitempty"`
+	MemoryShares       int           `json:"memory_shares,omitempty"`
+	MemoryLimit        int           `json:"memory_limit,omitempty"`
+	Vdisks             []VdiskAttach `json:"vdisks,omitempty"`
+	Isos               []IsoAttach   `json:"isos,omitempty"`
+	// luns
+	// usb_devices
+	// pci_devices
+	// mdev_devices
+	VmachineInfs []VMachineInfSoftCreate `json:"vmachine_infs,omitempty"`
+	// vfunction_infs
+	// cdroms
+	// new_cdroms
+	NewVdisks []VdiskCreateAttach `json:"new_vdisks,omitempty"`
+	// new_luns
+	NewIsos      []IsoSoftAttach `json:"new_isos,omitempty"`
+	StartOn      bool            `json:"start_on,omitempty"`
+	RemoteAccess bool            `json:"remote_access,omitempty"`
+	Parent       string          `json:"parent,omitempty"`
+	Thin         bool            `json:"thin,omitempty"`
+	Clone        bool            `json:"clone,omitempty"`
+	Template     string          `json:"template,omitempty"`
+	CpuTopology  []CpuTopology   `json:"cpu_topology,omitempty"`
+	SshInject    *SshInject      `json:"ssh_inject,omitempty"`
 }
 
 type DomainUpdateConfig struct {

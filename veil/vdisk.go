@@ -94,12 +94,14 @@ type VdiskCreateAttach struct {
 	VdiskBusCache
 }
 
+// List Эндпоинт получения списка виртуальных дисков
 func (d *VdiskService) List() (*VdisksResponse, *http.Response, error) {
 	response := new(VdisksResponse)
 	res, err := d.client.ExecuteRequest("GET", baseVdiskUrl, []byte{}, response)
 	return response, res, err
 }
 
+// List Эндпоинт получения списка виртуальных дисков с параметрами
 func (d *VdiskService) ListParams(queryParams map[string]string) (*VdisksResponse, *http.Response, error) {
 	listUrl := baseVdiskUrl
 	if len(queryParams) != 0 {
@@ -115,6 +117,7 @@ func (d *VdiskService) ListParams(queryParams map[string]string) (*VdisksRespons
 	return response, res, err
 }
 
+// Get Эндпоинт получения информации по диску.
 func (d *VdiskService) Get(Id string) (*VdiskObject, *http.Response, error) {
 
 	vdisk := new(VdiskObject)
@@ -122,6 +125,7 @@ func (d *VdiskService) Get(Id string) (*VdiskObject, *http.Response, error) {
 	return vdisk, res, err
 }
 
+// Create Эндпоинт создания виртуального диска
 func (d *VdiskService) Create(config *VdiskCreate, asynced bool) (*VdiskObject, *http.Response, error) {
 
 	vdisk := new(VdiskObject)
@@ -137,6 +141,7 @@ func (d *VdiskService) Create(config *VdiskCreate, asynced bool) (*VdiskObject, 
 	return vdisk, res, err
 }
 
+// Update Эндпоинт редактирования информации по диску.
 func (d *VdiskService) Update(Id string, description string) (*VdiskObject, *http.Response, error) {
 
 	vdisk := new(VdiskObject)
@@ -152,6 +157,18 @@ func (d *VdiskService) Update(Id string, description string) (*VdiskObject, *htt
 	return vdisk, res, err
 }
 
+// Extend Эндпоинт увеличения размера виртуального диска
+func (d *VdiskService) Extend(Id string, size float64) (*VdiskObject, *http.Response, error) {
+	vdisk := new(VdiskObject)
+	body := struct {
+		Size float64 `json:"size,omitempty"`
+	}{size}
+	b, _ := json.Marshal(body)
+	res, err := d.client.ExecuteRequest("POST", fmt.Sprint(baseVdiskUrl, Id, "/extend/"), b, vdisk)
+	return vdisk, res, err
+}
+
+// Remove Эндпоинт удаления виртуального диска
 func (d *VdiskService) Remove(Id string) (bool, *http.Response, error) {
 
 	res, err := d.client.ExecuteRequest("POST", fmt.Sprint(baseVdiskUrl, Id, "/remove/"), []byte{}, nil)
@@ -161,4 +178,9 @@ func (d *VdiskService) Remove(Id string) (bool, *http.Response, error) {
 	}
 
 	return true, res, err
+}
+
+func (entity *VdiskObject) Refresh(client *WebClient) (*VdiskObject, error) {
+	_, err := client.ExecuteRequest("GET", fmt.Sprint(baseVdiskUrl, entity.Id, "/"), []byte{}, entity)
+	return entity, err
 }

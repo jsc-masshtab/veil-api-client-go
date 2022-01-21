@@ -52,6 +52,17 @@ type VMachineInfObject struct {
 	LinkState    string       `json:"link_state,omitempty"`
 }
 
+const NicDriverTypes = `(virtio|e1000|rtl8139|vmxnet3)`
+const LinkStateTypes = `(up|dowm)`
+
+type VMachineInfSoftCreate struct {
+	Vnetwork    string `json:"vnetwork,omitempty"`
+	MacAddress  string `json:"mac_address,omitempty"`
+	NicDriver   string `json:"nic_driver,omitempty"`
+	VmachineInf string `json:"vmachine_inf,omitempty"`
+	LinkState   string `json:"link_state,omitempty"`
+}
+
 type VMachinesResponse struct {
 	BaseListResponse
 	Results []VMachineInfObjectsList `json:"results,omitempty"`

@@ -56,6 +56,13 @@ type LibraryObject struct {
 	DownloadUrl    string   `json:"download_url,omitempty"`
 }
 
+type FileImportConfig struct {
+	VerboseName  string `json:"verbose_name,omitempty"`
+	WithDeletion bool   `json:"with_deletion,omitempty"`
+	Preallocate  bool   `json:"preallocate,omitempty"`
+	Datapool     string `json:"datapool,omitempty"`
+}
+
 type LibraryResponse struct {
 	BaseListResponse
 	Results []LibraryObjectsList `json:"results,omitempty"`
@@ -85,6 +92,20 @@ func (d *LibraryService) ListParams(queryParams map[string]string) (*LibraryResp
 func (d *LibraryService) Get(Id string) (*LibraryObject, *http.Response, error) {
 	entity := new(LibraryObject)
 	res, err := d.client.ExecuteRequest("GET", fmt.Sprint(baseLibraryUrl, Id, "/"), []byte{}, entity)
+	return entity, res, err
+}
+
+func (d *LibraryService) Import(Id string, config FileImportConfig) (*VdiskObject, *http.Response, error) {
+	entity := new(VdiskObject)
+	b, _ := json.Marshal(config)
+	asyncResp := new(AsyncEntityResponse)
+	res, err := d.client.ExecuteRequest("POST", fmt.Sprint(baseLibraryUrl, Id, "/import-file/?async=1"), b, asyncResp)
+	if err != nil {
+		return entity, res, err
+	}
+	client := d.client.RetClient()
+	taskObj := WaitTaskReady(client, asyncResp.Task.Id, true, 0, true)
+	res, err = client.Task.Response(taskObj.Id, entity)
 	return entity, res, err
 }
 
