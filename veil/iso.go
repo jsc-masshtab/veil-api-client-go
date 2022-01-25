@@ -3,6 +3,7 @@ package veil
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -11,9 +12,12 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const baseIsoUrl = baseApiUrl + "iso/"
+
+var IsoUrlUploadTimeout int64 = 360
 
 type IsoService struct {
 	client Client
@@ -21,7 +25,7 @@ type IsoService struct {
 
 type IsoObjectsList struct {
 	Id       string           `json:"id,omitempty"`
-	Status   string           `json:"name,omitempty"`
+	Status   string           `json:"status,omitempty"`
 	FileName string           `json:"filename,omitempty"`
 	Size     float64          `json:"size,omitempty"`
 	DataPool NameTypeDataPool `json:"datapool,omitempty"`
@@ -35,7 +39,7 @@ type IsoObject struct {
 	Description string           `json:"description,omitempty"`
 	LockedBy    string           `json:"locked_by,omitempty"`
 	EntityType  string           `json:"entity_type,omitempty"`
-	Status      string           `json:"name,omitempty"`
+	Status      string           `json:"status,omitempty"`
 	Created     string           `json:"created,omitempty"`
 	Modified    string           `json:"modified,omitempty"`
 	DataPool    NameTypeDataPool `json:"datapool,omitempty"`
@@ -91,51 +95,73 @@ func (d *IsoService) Get(Id string) (*IsoObject, *http.Response, error) {
 	return entity, res, err
 }
 
-func (d *IsoService) Create(DataPoolId string, FileName string) (*IsoObject, *http.Response, error) {
+func (d *IsoService) Create(DataPoolId string, FilenameUrl string, timeout int64) (*IsoObject, error) {
+	if timeout == 0 {
+		timeout = IsoUrlUploadTimeout
+	}
 	// Part 1
 	entity := new(IsoObject)
-
-	body := struct {
-		DataPoolId string `json:"datapool,omitempty"`
-		FileName   string `json:"filename,omitempty"`
-	}{DataPoolId, FileName}
-
+	isUrl := isValidUrl(FilenameUrl)
+	body := map[string]string{
+		"datapool": DataPoolId,
+	}
+	if isUrl {
+		body["url"] = FilenameUrl
+	} else {
+		body["filename"] = FilenameUrl
+		if _, err := os.Stat("../file_data/" + FilenameUrl); errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("iso file does not exists (check folder file_data)")
+		}
+	}
 	b, _ := json.Marshal(body)
-	res, err := d.client.ExecuteRequest("PUT", baseIsoUrl, b, entity)
+	_, err := d.client.ExecuteRequest("PUT", baseIsoUrl, b, entity)
 	if err != nil {
-		return nil, res, err
+		return nil, err
 	}
 
 	// Part 2
-	pwd, _ := os.Getwd()
-	file, err := os.Open(pwd + "/file_data/" + FileName)
-	if err != nil {
-		return entity, res, err
+	if isUrl {
+		timeoutTime := time.Now().Unix() + timeout
+		for true {
+			_, err := d.client.ExecuteRequest("GET", fmt.Sprint(baseIsoUrl, entity.Id, "/"), []byte{}, entity)
+			if entity.Status == Status.Active {
+				return entity, err
+			}
+			if time.Now().Unix() > timeoutTime {
+				return entity, fmt.Errorf("error uploading file by url: %w", err)
+			}
+			time.Sleep(time.Second * StatusCheckInterval)
+		}
+	} else {
+		file, err := os.Open("../file_data/" + FilenameUrl)
+		defer file.Close()
+		if err != nil {
+			return entity, err
+		}
+		fileBody := &bytes.Buffer{}
+		writer := multipart.NewWriter(fileBody)
+		part, err := writer.CreateFormFile("file", filepath.Base(FilenameUrl))
+		if err != nil {
+			return nil, err
+		}
+		_, err = io.Copy(part, file)
+		if err != nil {
+			return nil, err
+		}
+		err = writer.Close()
+		if err != nil {
+			return nil, err
+		}
+		request, err := http.NewRequest("POST", fmt.Sprint(GetEnvUrl(), entity.UploadUrl), fileBody)
+		request.Header.Add("Content-Type", writer.FormDataContentType())
+		response, err := d.client.Execute(request)
+		defer response.Body.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
-	defer file.Close()
 
-	fileBody := &bytes.Buffer{}
-	writer := multipart.NewWriter(fileBody)
-	part, err := writer.CreateFormFile("file", filepath.Base(FileName))
-	if err != nil {
-		return nil, res, err
-	}
-	_, err = io.Copy(part, file)
-	if err != nil {
-		return nil, res, err
-	}
-	request, err := http.NewRequest("POST", fmt.Sprint(GetEnvUrl(), entity.UploadUrl), fileBody)
-	err = writer.Close()
-	if err != nil {
-		return nil, res, err
-	}
-	request.Header.Set("Content-Type", writer.FormDataContentType())
-	response, err := d.client.Execute(request)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer response.Body.Close()
-	return entity, response, err
+	return entity, err
 }
 
 func (d *IsoService) Download(entity *IsoObject) (*IsoObject, *http.Response, error) {
@@ -175,4 +201,13 @@ func (d *IsoService) Download(entity *IsoObject) (*IsoObject, *http.Response, er
 		return entity, res, fmt.Errorf("delete file error: %w", err)
 	}
 	return entity, res, nil
+}
+
+// Remove Эндпоинт удаления образа
+func (d *IsoService) Remove(Id string) (bool, *http.Response, error) {
+	res, err := d.client.ExecuteRequest("POST", fmt.Sprint(baseIsoUrl, Id, "/remove/"), []byte{}, nil)
+	if err != nil {
+		return false, res, err
+	}
+	return true, res, err
 }

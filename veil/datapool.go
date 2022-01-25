@@ -20,7 +20,7 @@ type NodesConnected struct {
 
 type DataPoolObjectsList struct {
 	Id             string             `json:"id,omitempty"`
-	Status         string             `json:"name,omitempty"`
+	Status         string             `json:"status,omitempty"`
 	VerboseName    string             `json:"verbose_name,omitempty"`
 	BuiltIn        bool               `json:"built_in,omitempty"`
 	Priority       int                `json:"priority,omitempty"`
@@ -47,7 +47,7 @@ type DataPoolObject struct {
 	LockedBy       string             `json:"locked_by,omitempty"`
 	BuiltIn        bool               `json:"built_in,omitempty"`
 	EntityType     string             `json:"entity_type,omitempty"`
-	Status         string             `json:"name,omitempty"`
+	Status         string             `json:"status,omitempty"`
 	Created        string             `json:"created,omitempty"`
 	Modified       string             `json:"modified,omitempty"`
 	Type           string             `json:"type,omitempty"`

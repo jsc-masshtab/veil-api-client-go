@@ -3,17 +3,20 @@ package veil
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 )
 
 const baseLibraryUrl = baseApiUrl + "library/"
+
+var LibraryUrlUploadTimeout int64 = 360
 
 type LibraryService struct {
 	client Client
@@ -22,7 +25,7 @@ type LibraryService struct {
 type LibraryObjectsList struct {
 	Id       string           `json:"id,omitempty"`
 	FileName string           `json:"filename,omitempty"`
-	Status   string           `json:"name,omitempty"`
+	Status   string           `json:"status,omitempty"`
 	DataPool NameTypeDataPool `json:"datapool,omitempty"`
 	Domain   NameDomain       `json:"domain,omitempty"`
 	Size     float64          `json:"size,omitempty"`
@@ -37,7 +40,7 @@ type LibraryObject struct {
 	Id         string           `json:"id,omitempty"`
 	FileName   string           `json:"filename,omitempty"`
 	LockedBy   string           `json:"locked_by,omitempty"`
-	Status     string           `json:"name,omitempty"`
+	Status     string           `json:"status,omitempty"`
 	Created    string           `json:"created,omitempty"`
 	Modified   string           `json:"modified,omitempty"`
 	EntityType string           `json:"entity_type,omitempty"`
@@ -109,51 +112,80 @@ func (d *LibraryService) Import(Id string, config FileImportConfig) (*VdiskObjec
 	return entity, res, err
 }
 
-func (d *LibraryService) Create(DataPoolId string, FileName string) (*LibraryObject, *http.Response, error) {
+func (d *LibraryService) Create(DataPoolId string, FilenameUrl string, timeout int64) (*LibraryObject, error) {
+	if timeout == 0 {
+		timeout = LibraryUrlUploadTimeout
+	}
 	// Part 1
 	entity := new(LibraryObject)
-
-	body := struct {
-		DataPoolId string `json:"datapool,omitempty"`
-		FileName   string `json:"filename,omitempty"`
-	}{DataPoolId, FileName}
-
+	isUrl := isValidUrl(FilenameUrl)
+	body := map[string]string{
+		"datapool": DataPoolId,
+	}
+	if isUrl {
+		body["url"] = FilenameUrl
+	} else {
+		body["filename"] = FilenameUrl
+		if _, err := os.Stat("../file_data/" + FilenameUrl); errors.Is(err, os.ErrNotExist) {
+			return nil, fmt.Errorf("library file does not exists (check folder file_data)")
+		}
+	}
 	b, _ := json.Marshal(body)
-	res, err := d.client.ExecuteRequest("PUT", baseLibraryUrl, b, entity)
+	_, err := d.client.ExecuteRequest("PUT", baseLibraryUrl, b, entity)
 	if err != nil {
-		return nil, res, err
+		return nil, err
 	}
 
 	// Part 2
-	pwd, _ := os.Getwd()
-	file, err := os.Open(pwd + "/file_data/" + FileName)
-	if err != nil {
-		return entity, res, err
+	if isUrl {
+		request, err := http.NewRequest("POST", fmt.Sprint(GetEnvUrl(), entity.UploadUrl), nil)
+		if err != nil {
+			return nil, err
+		}
+		_, err = d.client.Execute(request)
+		if err != nil {
+			return nil, err
+		}
+		timeoutTime := time.Now().Unix() + timeout
+		for true {
+			_, err := d.client.ExecuteRequest("GET", fmt.Sprint(baseLibraryUrl, entity.Id, "/"), []byte{}, entity)
+			if entity.Status == Status.Active {
+				return entity, err
+			}
+			if time.Now().Unix() > timeoutTime {
+				return entity, fmt.Errorf("error uploading file by url: %w", err)
+			}
+			time.Sleep(time.Second * StatusCheckInterval)
+		}
+	} else {
+		file, err := os.Open("../file_data/" + FilenameUrl)
+		defer file.Close()
+		if err != nil {
+			return entity, err
+		}
+		fileBody := &bytes.Buffer{}
+		writer := multipart.NewWriter(fileBody)
+		part, err := writer.CreateFormFile("file", filepath.Base(FilenameUrl))
+		if err != nil {
+			return nil, err
+		}
+		_, err = io.Copy(part, file)
+		if err != nil {
+			return nil, err
+		}
+		err = writer.Close()
+		if err != nil {
+			return nil, err
+		}
+		request, err := http.NewRequest("POST", fmt.Sprint(GetEnvUrl(), entity.UploadUrl), fileBody)
+		request.Header.Add("Content-Type", writer.FormDataContentType())
+		response, err := d.client.Execute(request)
+		defer response.Body.Close()
+		if err != nil {
+			return nil, err
+		}
 	}
-	defer file.Close()
-
-	fileBody := &bytes.Buffer{}
-	writer := multipart.NewWriter(fileBody)
-	part, err := writer.CreateFormFile("file", filepath.Base(FileName))
-	if err != nil {
-		return nil, res, err
-	}
-	_, err = io.Copy(part, file)
-	if err != nil {
-		return nil, res, err
-	}
-	request, err := http.NewRequest("POST", fmt.Sprint(GetEnvUrl(), entity.UploadUrl), fileBody)
-	err = writer.Close()
-	if err != nil {
-		return nil, res, err
-	}
-	request.Header.Set("Content-Type", writer.FormDataContentType())
-	response, err := d.client.Execute(request)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer response.Body.Close()
-	return entity, response, err
+	return entity, nil
 }
 
 func (d *LibraryService) Download(entity *LibraryObject) (*LibraryObject, *http.Response, error) {
@@ -193,4 +225,13 @@ func (d *LibraryService) Download(entity *LibraryObject) (*LibraryObject, *http.
 		return entity, res, fmt.Errorf("delete file error: %w", err)
 	}
 	return entity, res, nil
+}
+
+// Remove Эндпоинт удаления файла
+func (d *LibraryService) Remove(Id string) (bool, *http.Response, error) {
+	res, err := d.client.ExecuteRequest("POST", fmt.Sprint(baseLibraryUrl, Id, "/remove/"), []byte{}, nil)
+	if err != nil {
+		return false, res, err
+	}
+	return true, res, err
 }

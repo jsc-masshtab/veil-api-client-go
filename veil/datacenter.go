@@ -17,7 +17,7 @@ type DataCenterObjectsList struct {
 	CpuCount               int    `json:"cpu_count,omitempty"`
 	Id                     string `json:"id,omitempty"`
 	MemoryCount            int    `json:"memory_count,omitempty"`
-	Status                 string `json:"name,omitempty"`
+	Status                 string `json:"status,omitempty"`
 	VerboseName            string `json:"verbose_name,omitempty"`
 	SharedStoragesCount    int    `json:"shared_storages_count,omitempty"`
 	TransportStoragesCount int    `json:"transport_storages_count,omitempty"`
@@ -36,7 +36,7 @@ type DataCenterObject struct {
 	Clusters        []NameCluster `json:"clusters,omitempty"`
 	Modified        string        `json:"modified,omitempty"`
 	Permissions     []string      `json:"permissions,omitempty"`
-	Status          string        `json:"name,omitempty"`
+	Status          string        `json:"status,omitempty"`
 	VerboseName     string        `json:"verbose_name,omitempty"`
 	BuiltIn         bool          `json:"built_in,omitempty"`
 	Tags            []Tags        `json:"tags,omitempty"`

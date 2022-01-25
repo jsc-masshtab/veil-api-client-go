@@ -9,8 +9,8 @@ import (
 
 const baseTaskUrl = baseApiUrl + "tasks/"
 
-// TaskStatusCheckInterval - time between async checks in seconds
-const TaskStatusCheckInterval = 1
+// StatusCheckInterval - time between async checks in seconds
+const StatusCheckInterval = 1
 
 // TaskAsyncTimeout - time to wait task ending
 const TaskAsyncTimeout = 300
@@ -112,7 +112,6 @@ func WaitTaskReady(client *WebClient, uuid string, blocked bool, timeout int64, 
 		for true {
 			task, _, _ := client.Task.Get(uuid)
 			if task.Status != TaskStatus.InProgress {
-				time.Sleep(time.Second * TaskStatusCheckInterval)
 				task, _, _ := client.Task.Get(uuid)
 				return task
 			}
@@ -122,9 +121,9 @@ func WaitTaskReady(client *WebClient, uuid string, blocked bool, timeout int64, 
 					panic(errMsg)
 				}
 			}
+			time.Sleep(time.Second * StatusCheckInterval)
 		}
 	}
-	//time.Sleep(time.Second)
 	return task
 }
 

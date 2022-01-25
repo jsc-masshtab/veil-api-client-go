@@ -20,6 +20,7 @@ var TestDomainID = uuid.NewString()
 var TestPackerTemplateName = "debian_cloud"
 var TestPackerVMName = "packer_vm"
 var TestPackerFilename = "debian-11-generic-amd64.qcow2"
+var TestPackerIsoFilename = "ubuntu-18.04.3-desktop-amd64.iso"
 var TestPackerVdiskName = "packer_vdisk"
 var TestPackerVNet = "vms"
 var UserDataTemplate = `#cloud-config
@@ -192,7 +193,7 @@ func Test_DomainMultiCreateThin(t *testing.T) {
 	return
 }
 
-func Test_Domain_Packer_Clone(t *testing.T) {
+func Test_DomainPackerClone(t *testing.T) {
 	/*
 		Вариант 1. Имитация packer clone
 		Условия:
@@ -289,7 +290,7 @@ func Test_Domain_Packer_Clone(t *testing.T) {
 	return
 }
 
-func Test_Domain_Packer_Qcow2(t *testing.T) {
+func Test_DomainPackerQcow2(t *testing.T) {
 	/*
 		Вариант 2. Имитация packer qcow2
 		Условия:
@@ -423,7 +424,7 @@ func Test_Domain_Packer_Qcow2(t *testing.T) {
 	return
 }
 
-func Test_Domain_Packer_Iso(t *testing.T) {
+func Test_DomainPackerIso(t *testing.T) {
 	/*
 		Вариант 2. Имитация packer iso
 		Условия:

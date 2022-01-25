@@ -22,7 +22,7 @@ type VdiskSnapshot struct {
 
 type VdiskObjectsList struct {
 	Id          string           `json:"id,omitempty"`
-	Status      string           `json:"name,omitempty"`
+	Status      string           `json:"status,omitempty"`
 	VerboseName string           `json:"verbose_name,omitempty"`
 	Size        float64          `json:"size,omitempty"`
 	DataPool    NameTypeDataPool `json:"datapool,omitempty"`
@@ -37,7 +37,7 @@ type VdiskObject struct {
 	Description  string           `json:"description,omitempty"`
 	LockedBy     string           `json:"locked_by,omitempty"`
 	EntityType   string           `json:"entity_type,omitempty"`
-	Status       string           `json:"name,omitempty"`
+	Status       string           `json:"status,omitempty"`
 	Created      string           `json:"created,omitempty"`
 	Modified     string           `json:"modified,omitempty"`
 	ReadOnly     bool             `json:"readonly,omitempty"`

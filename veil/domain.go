@@ -27,7 +27,7 @@ type DomainObjectsList struct {
 	Id                 string           `json:"id,omitempty"`
 	VerboseName        string           `json:"verbose_name,omitempty"`
 	MemoryCount        int              `json:"memory_count,omitempty"`
-	Status             string           `json:"name,omitempty"`
+	Status             string           `json:"status,omitempty"`
 	Parent             NameDomain       `json:"parent,omitempty"`
 	CpuCount           int              `json:"cpu_count,omitempty"`
 	MemoryPool         string           `json:"memory_pool,omitempty"`
@@ -59,7 +59,7 @@ type DomainObject struct {
 	Created            string           `json:"created,omitempty"`
 	Modified           string           `json:"modified,omitempty"`
 	MemoryCount        int              `json:"memory_count,omitempty"`
-	Status             string           `json:"name,omitempty"`
+	Status             string           `json:"status,omitempty"`
 	Parent             NameDomain       `json:"parent,omitempty"`
 	CpuCount           int              `json:"cpu_count,omitempty"`
 	MemoryPool         string           `json:"memory_pool,omitempty"`

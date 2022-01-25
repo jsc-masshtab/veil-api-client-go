@@ -2,6 +2,7 @@ package veil
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -21,18 +22,41 @@ func Test_LibraryListGet(t *testing.T) {
 }
 
 func Test_LibraryUpload(t *testing.T) {
-	// TODO fix upload files
-	t.SkipNow()
 	client := NewClient("", "", false)
 	response, _, err := client.DataPool.List()
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	if len(response.Results) == 0 {
 		t.SkipNow()
 	}
 	firstDp := response.Results[0]
-	entity, _, err := client.Library.Create(firstDp.Id, "base_domain.xml")
-	assert.Nil(t, err)
+	entity, err := client.Library.Create(firstDp.Id, "base_domain.xml", 0)
+	require.Nil(t, err)
 	assert.NotEqual(t, entity.Id, "", "file Id can not be empty")
+
+	status, _, err := client.Library.Remove(entity.Id)
+	assert.Nil(t, err)
+	assert.True(t, status)
+
+	return
+}
+
+func Test_LibraryUploadUrl(t *testing.T) {
+	client := NewClient("", "", false)
+	response, _, err := client.DataPool.List()
+	require.Nil(t, err)
+	if len(response.Results) == 0 {
+		t.SkipNow()
+	}
+	firstDp := response.Results[0]
+	// TODO Check filename exists on datapool
+	library, err := client.Library.Create(firstDp.Id, "http://192.168.10.144/test_helper/test_domain.xml", 0)
+	assert.Nil(t, err)
+	assert.NotEqual(t, library.Id, "", "Library Id can not be empty")
+	assert.Equal(t, library.Status, Status.Active, "Library Status should be Active")
+
+	status, _, err := client.Library.Remove(library.Id)
+	assert.Nil(t, err)
+	assert.True(t, status)
 
 	return
 }

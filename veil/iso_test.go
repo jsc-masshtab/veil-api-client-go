@@ -2,6 +2,7 @@ package veil
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"testing"
 )
 
@@ -21,18 +22,41 @@ func Test_IsoListGet(t *testing.T) {
 }
 
 func Test_IsoUpload(t *testing.T) {
-	// TODO fix upload files
-	t.SkipNow()
 	client := NewClient("", "", false)
 	response, _, err := client.DataPool.List()
-	assert.Nil(t, err)
+	require.Nil(t, err)
 	if len(response.Results) == 0 {
 		t.SkipNow()
 	}
 	firstDp := response.Results[0]
-	iso, _, err := client.Iso.Create(firstDp.Id, "test_live.iso")
+	iso, err := client.Iso.Create(firstDp.Id, "test_live.iso", 0)
 	assert.Nil(t, err)
 	assert.NotEqual(t, iso.Id, "", "Iso Id can not be empty")
+
+	status, _, err := client.Iso.Remove(iso.Id)
+	assert.Nil(t, err)
+	assert.True(t, status)
+
+	return
+}
+
+func Test_IsoUploadUrl(t *testing.T) {
+	client := NewClient("", "", false)
+	response, _, err := client.DataPool.List()
+	require.Nil(t, err)
+	if len(response.Results) == 0 {
+		t.SkipNow()
+	}
+	firstDp := response.Results[0]
+	// TODO Check filename exists on datapool
+	iso, err := client.Iso.Create(firstDp.Id, "http://192.168.10.144/test_helper/test_live.iso", 0)
+	assert.Nil(t, err)
+	assert.NotEqual(t, iso.Id, "", "Iso Id can not be empty")
+	assert.Equal(t, iso.Status, Status.Active, "Iso Status should be Active")
+
+	status, _, err := client.Iso.Remove(iso.Id)
+	assert.Nil(t, err)
+	assert.True(t, status)
 
 	return
 }

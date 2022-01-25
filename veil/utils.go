@@ -3,7 +3,9 @@ package veil
 import (
 	"fmt"
 	"math/rand"
+	"net/url"
 	"os"
+	"regexp"
 	"time"
 )
 
@@ -64,4 +66,25 @@ func stringInSlice(a string, list []string) bool {
 		}
 	}
 	return false
+}
+
+var uuidRegex = regexp.MustCompile(`^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
+
+func isUUID(uuid string) bool {
+	return uuidRegex.MatchString(uuid)
+}
+
+// isValidUrl tests a string to determine if it is a well-structured url or not.
+func isValidUrl(Url string) bool {
+	_, err := url.ParseRequestURI(Url)
+	if err != nil {
+		return false
+	}
+
+	u, err := url.Parse(Url)
+	if err != nil || u.Scheme == "" || u.Host == "" {
+		return false
+	}
+
+	return true
 }

@@ -1,5 +1,18 @@
 package veil
 
+type StatusStruct struct {
+	Creating, Active, Failed, Deleting, Service, Partial string
+}
+
+var Status = StatusStruct{
+	Creating: "CREATING",
+	Active:   "ACTIVE",
+	Failed:   "FAILED",
+	Deleting: "DELETING",
+	Service:  "SERVICE",
+	Partial:  "PARTIAL",
+}
+
 type IdempotencyKeyBase struct {
 	IdempotencyKey string `json:"idempotency_key,omitempty"`
 }

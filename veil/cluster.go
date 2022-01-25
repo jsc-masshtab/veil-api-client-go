@@ -17,7 +17,7 @@ type ClusterObjectsList struct {
 	VerboseName        string         `json:"verbose_name,omitempty"`
 	CpuCount           int            `json:"cpu_count,omitempty"`
 	MemoryCount        int            `json:"memory_count,omitempty"`
-	Status             string         `json:"name,omitempty"`
+	Status             string         `json:"status,omitempty"`
 	Datacenter         NameDatacenter `json:"datacenter,omitempty"`
 	NodesCount         int            `json:"nodes_count,omitempty"`
 	BuiltIn            bool           `json:"built_in,omitempty"`
@@ -41,7 +41,7 @@ type ClusterObject struct {
 	FencingType     string         `json:"fencing_type,omitempty"`
 	HeartbeatType   string         `json:"heartbeat_type,omitempty"`
 	Permissions     []string       `json:"permissions,omitempty"`
-	Status          string         `json:"name,omitempty"`
+	Status          string         `json:"status,omitempty"`
 	VerboseName     string         `json:"verbose_name,omitempty"`
 	BuiltIn         bool           `json:"built_in,omitempty"`
 	Tags            []Tags         `json:"tags,omitempty"`

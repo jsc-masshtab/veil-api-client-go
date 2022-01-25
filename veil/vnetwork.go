@@ -49,7 +49,7 @@ type PortGroup struct {
 
 type VnetObjectsList struct {
 	Id          string `json:"id,omitempty"`
-	Status      string `json:"name,omitempty"`
+	Status      string `json:"status,omitempty"`
 	VerboseName string `json:"verbose_name,omitempty"`
 	Management  bool   `json:"management,omitempty"`
 	Tags        []Tags `json:"tags,omitempty"`
@@ -75,7 +75,7 @@ type VnetObject struct {
 	LinkedVswitchInfo []LinkedVswitchInfo `json:"linked_vswitch_info,omitempty"`
 	// vnservices
 	EntityType string    `json:"entity_type,omitempty"`
-	Status     string    `json:"name,omitempty"`
+	Status     string    `json:"status,omitempty"`
 	PortGroup  PortGroup `json:"port_group,omitempty"`
 	// netflow_config
 	Uplinks        []LinkedVswitchInfo `json:"uplinks,omitempty"`

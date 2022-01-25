@@ -17,7 +17,7 @@ type NodeObjectsList struct {
 	VerboseName        string             `json:"verbose_name,omitempty"`
 	CpuCount           int                `json:"cpu_count,omitempty"`
 	MemoryCount        int                `json:"memory_count,omitempty"`
-	Status             string             `json:"name,omitempty"`
+	Status             string             `json:"status,omitempty"`
 	ManagementIp       string             `json:"management_ip,omitempty"`
 	DomainsCount       int                `json:"domains_count,omitempty"`
 	DomainsOnCount     int                `json:"domains_on_count,omitempty"`
@@ -38,7 +38,7 @@ type NodeObject struct {
 	Description  string   `json:"description,omitempty"`
 	LockedBy     string   `json:"locked_by,omitempty"`
 	Permissions  []string `json:"permissions,omitempty"`
-	Status       string   `json:"name,omitempty"`
+	Status       string   `json:"status,omitempty"`
 	Created      string   `json:"created,omitempty"`
 	Modified     string   `json:"modified,omitempty"`
 	ManagementIp string   `json:"management_ip,omitempty"`
